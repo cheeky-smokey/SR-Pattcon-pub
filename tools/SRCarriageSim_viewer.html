@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SR キャリッジシミュレータ</title>
+<style>
+:root {
+  --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #deddd8;
+  --accent: #2f6fde; --accent-ink: #fff; --sel: #23262d; --unsel: #ecebe6; --cam: rgba(47,111,222,.12);
+  --warn: #d6452f; --ok: #2e8b57; --carriage: #e39a2d; --on1: #d6452f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16171a; --panel: #1f2125; --ink: #ececef; --muted: #9a9aa2; --line: #33353b;
+    --accent: #5b8ff0; --accent-ink: #0d1016; --sel: #e8e6df; --unsel: #2a2c31; --cam: rgba(91,143,240,.18);
+    --warn: #f07a64; --ok: #5cc98a; --carriage: #f0b04f; --on1: #f07a64;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16171a; --panel: #1f2125; --ink: #ececef; --muted: #9a9aa2; --line: #33353b;
+  --accent: #5b8ff0; --accent-ink: #0d1016; --sel: #e8e6df; --unsel: #2a2c31; --cam: rgba(91,143,240,.18);
+  --warn: #f07a64; --ok: #5cc98a; --carriage: #f0b04f; --on1: #f07a64;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px;
+  border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 16px; margin: 0 8px 0 0; font-weight: 650; }
+.status { font-size: 13px; color: var(--muted); }
+.status b { color: var(--ink); font-weight: 600; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
+.dot.on { background: var(--ok); }
+main { max-width: 1200px; margin: 0 auto; padding: 14px 16px 40px; display: grid; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.card h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+button, select, input { font: inherit; color: var(--ink); }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.danger { border-color: var(--warn); color: var(--warn); }
+button:disabled { opacity: .45; cursor: default; }
+select, input { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+input[type=number], input.nd { width: 64px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+main > *, .grid2 > * { min-width: 0; }
+label.f { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+label.f > span { min-width: 3.5em; }
+#bed { width: 100%; height: 100px; display: block; touch-action: pan-y; cursor: default; }
+#bed.grab { cursor: grab; } #bed.grabbing { cursor: grabbing; }
+.slots { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.slot { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--muted); }
+.slot input { width: 58px; }
+.slot.c1 > b, .slot.c2 > b { color: var(--on1); }
+.slot.p > b { color: var(--accent); }
+button.small { padding: 3px 9px; font-size: 12px; }
+#fabricWrap { max-height: 460px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+#fabric { display: block; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.stats b { color: var(--ink); font-weight: 600; }
+.stats .bad { color: var(--warn); }
+#log { height: 180px; overflow: auto; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; white-space: pre; }
+#log .tx { color: var(--accent); }
+#log .m { color: var(--muted); }
+.note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+.speedbox { flex: 1 1 220px; display: flex; align-items: center; gap: 8px; }
+.speedbox input[type=range] { flex: 1; }
+#wave { width: 100%; display: block; }
+details summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 8px; }
+label.ck { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.wavebar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; font-size: 13px; color: var(--muted); }
+@media (max-width: 600px) { header h1 { width: 100%; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>SR キャリッジシミュレータ</h1>
+  <button id="btnConnect" class="primary">接続</button>
+  <button id="btnDemo">デモ</button>
+  <span class="status"><span id="dot" class="dot"></span><span id="status">未接続</span></span>
+  <span class="status" style="margin-left:auto">キャリッジ <b id="sideLbl">—</b>　段 <b id="rowCount">0</b></span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>ニードルベッド</h2>
+    <canvas id="bed"></canvas>
+    <p class="note" style="margin:2px 0 0">▲（ポイントカム 1〜4）と赤い線（カーソル 1・2）はドラッグで動かせる。放すと本機に送る（未接続なら表示だけ）。</p>
+    <div class="row" style="margin-top:10px">
+      <button data-cmd="l" class="run">← 左行き</button>
+      <button data-cmd="p" class="run primary">1パス</button>
+      <button data-cmd="r" class="run">右行き →</button>
+      <button id="btnAuto">自動往復</button>
+      <button data-cmd="s" class="danger">停止</button>
+      <div class="speedbox">
+        <label class="f" for="speed"><span>速度</span></label>
+        <input id="speed" type="range" min="10" max="2000" step="10" value="150">
+        <input id="speedN" type="number" min="1" max="2000" value="150"> 目/秒
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>波形（ロジアナと同じ並び・直近のパス）</h2>
+    <canvas id="wave"></canvas>
+    <div class="wavebar">
+      表示するパス数
+      <select id="waveN"><option value="1">1</option><option value="2" selected>2</option><option value="4">4</option></select>
+      <span id="waveInfo"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>選針された段（上が最新・左が L 側）</h2>
+    <div id="fabricWrap"><canvas id="fabric"></canvas></div>
+    <div class="stats" id="stats">まだ段がありません</div>
+    <p class="note">段の上の縦線は基準目。赤 = 区間内のカーソル、橙 = 区間の中央（区間内にカーソルがないとき）。区間の外のカーソルは無視する。</p>
+    <div class="row" style="margin-top:8px">
+      <button data-cmd="clear">段をクリア</button>
+      <button data-cmd="hist 64">本機の履歴を再送</button>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>位置</h2>
+      <div class="row">
+        <span class="slot" style="min-width:5.5em">ポイントカム</span>
+        <div class="slots">
+          <label class="slot p"><b>1</b><input id="pc1" class="nd" value="L30"></label>
+          <label class="slot p"><b>2</b><input id="pc2" class="nd" value="R30"></label>
+          <label class="slot p"><b>3</b><input id="pc3" class="nd" value="" placeholder="なし"></label>
+          <label class="slot p"><b>4</b><input id="pc4" class="nd" value="" placeholder="なし"></label>
+          <button id="btnPc34" class="small">3・4 を追加</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <span class="slot" style="min-width:5.5em">カーソル</span>
+        <div class="slots">
+          <label class="slot c1"><b>1</b><input id="cur1" class="nd" value="R1"></label>
+          <label class="slot c2"><b>2</b><input id="cur2" class="nd" value="" placeholder="なし"></label>
+          <button id="btnCur2" class="small">2 を追加</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label class="f"><span>余白</span><input id="margin" type="number" min="1" max="60" value="12"></label>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label class="f"><span>選針先行</span><input id="offset" type="number" min="-60" max="60" value="0"> 目</label>
+        <label class="f"><span>OCD 遅れ</span><input id="dirlag" type="number" min="0" max="20" value="0"> ONP</label>
+      </div>
+      <div class="row" style="margin-top:8px"><button id="btnPos">適用</button></div>
+      <p class="note">編み針は最大 240 本（L120〜L1・R1〜R120）。ポイントカムは 2 個か 4 個（3・4 は両方入れるか両方空欄）、カーソルは 1 つか 2 つ（空欄 = なし）。どれも順不問で、本機が針番号順に並べて 1-2 番目の間を OPC 区間 1、3-4 番目の間を区間 2 にする。選針先行 = OPC 区間が基準位置より進行方向へ何目先にあるか。OCD 遅れ = 動き始めてから OCD が切り替わるまでの ONP 数。どちらもロジアナで数えて合わせてください。</p>
+    </section>
+
+    <section class="card">
+      <h2>信号</h2>
+      <div class="row">
+        <label class="f"><span>INS 読取</span>
+          <select id="sample"><option value="fall">ONP ↓ で読む</option><option value="rise">次の ONP ↑ 直前</option></select></label>
+      </div>
+      <div class="row" style="margin-top:6px"><label class="ck"><input id="on1edge" type="checkbox" checked> スタート・反転時の ON1 L パルス</label></div>
+      <div class="row" style="margin-top:4px"><label class="ck"><input id="opcimp" type="checkbox" checked> 最初の編み出しの OPC パルス</label></div>
+      <div class="row" style="margin-top:8px">
+        <button data-cmd="init" class="run">編み出しからやり直す</button>
+        <button data-cmd="save">本機に保存</button><button data-cmd="default">既定に戻す</button>
+      </div>
+      <details>
+        <summary>極性（既定は実機どおり）</summary>
+        <div class="row" style="margin-top:6px">
+          <label class="f"><span>OCD</span><select id="pol-ocd"><option value="0">右行き = L</option><option value="1">右行き = H</option></select></label>
+          <label class="f"><span>ON1</span><select id="pol-on1"><option value="0">有効 = L</option><option value="1">有効 = H</option></select></label>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <label class="f"><span>OPC</span><select id="pol-opc"><option value="1">出力 = H</option><option value="0">出力 = L</option></select></label>
+          <label class="f"><span>INS</span><select id="pol-ins"><option value="0">選針 = L (GND)</option><option value="1">選針 = H</option></select></label>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>シリアル</h2>
+    <div id="log"></div>
+    <div class="row" style="margin-top:8px">
+      <input id="cmdIn" placeholder="コマンド（? で一覧）" style="flex:1; min-width:160px">
+      <button id="btnSend">送信</button>
+    </div>
+    <p class="note">Chrome / Edge で開いてください（Web Serial）。「デモ」は本機なしで動く模擬キャリッジです。</p>
+  </section>
+</main>
+
+<script>
+"use strict";
+// ---------------------------------------------------------------- 状態
+const S = {
+  cfg: { sps: 150, l: 90, r: 149, l2: -1, r2: -1, on1: 120, on1b: -1, margin: 12, offset: 0, dirlag: 0, sample: "fall",
+         on1e: 1, opcimp: 1, ocd: 0, on1a: 0, opc: 1, ins: 0, side: "R" },
+  rows: [],            // {n, dir, l, r, l1, r1, l2, r2, sel, chg, opcp, on1p, k2c, setup, lat, sv, hv, bits}
+  waves: [],           // {n, dir, from, k, d}
+  pass: null,          // {dir, from, to, sps, t0}
+  carPos: null,
+  auto: false,
+  link: null,          // {write(str)}
+};
+const $ = (id) => document.getElementById(id);
+const NEEDLES = 240, HALF = NEEDLES / 2;     // 編み針は最大 240 本: L120..L1 = 0..119 / R1..R120 = 120..239
+const needleName = (i) => (i < HALF ? "L" + (HALF - i) : "R" + (i - HALF + 1));
+const isTen = (i) => (i < HALF ? (HALF - i) % 10 === 0 : (i - HALF + 1) % 10 === 0);   // L10・R10 など
+function parseNeedle(s) {
+  s = String(s).trim().toUpperCase();
+  let m = s.match(/^([LR])(\d{1,3})$/);
+  if (m) { const n = +m[2]; if (n < 1 || n > HALF) return null; return m[1] === "L" ? HALF - n : HALF - 1 + n; }
+  if (/^\d{1,3}$/.test(s) && +s < NEEDLES) return +s;
+  return null;
+}
+// 旧キー (本機 0924 以前: HOK / CCP / KSL / ND1 / DOB の名前) → 新キー (1017: OCD / ONP / OPC / ON1 / INS)
+const KEY_ALIAS = { nd1: "on1", nd1b: "on1b", nd1e: "on1e", kimp: "opcimp", hok: "ocd", nd1a: "on1a", ksl: "opc", dob: "ins", kslp: "opcp", nd1p: "on1p" };
+function kv(line) {
+  const o = {};
+  for (const t of line.split(" ").slice(1)) {
+    const e = t.indexOf("=");
+    if (e > 0) { const k = t.slice(0, e); o[KEY_ALIAS[k] || k] = t.slice(e + 1); }
+  }
+  return o;
+}
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+// 基準目 "c120" / "m119.5" / "-" → {src, v}
+const refOf = (code) => (!code || code === "-" ? null : { src: code[0], v: parseFloat(code.slice(1)) });
+function refText(code) {
+  const q = refOf(code);
+  if (!q) return "—";
+  const name = Number.isInteger(q.v) ? needleName(q.v) : `${needleName(Math.floor(q.v))}〜${needleName(Math.ceil(q.v))}の間`;
+  return `${name}（${q.src === "c" ? "カーソル" : "中央"}）`;
+}
+const inWin = (r, n) => (n >= r.l1 && n <= r.r1) || (r.l2 >= 0 && n >= r.l2 && n <= r.r2);
+
+// ---------------------------------------------------------------- ログ
+const logEl = $("log");
+function log(text, cls) {
+  const d = document.createElement("div");
+  if (cls) d.className = cls;
+  d.textContent = text;
+  logEl.appendChild(d);
+  while (logEl.childNodes.length > 400) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ---------------------------------------------------------------- 受信
+function onLine(line) {
+  line = line.replace(/\r$/, "");
+  if (!line) return;
+  if (line[0] !== "@") { log(line); return; }
+  log(line.length > 160 ? line.slice(0, 160) + "…" : line, "m");
+  const tag = line.split(" ", 1)[0];
+  const o = kv(line);
+  if (tag === "@CFG") {
+    const c = S.cfg;
+    for (const k of ["sps", "l", "r", "l2", "r2", "on1", "on1b", "margin", "offset", "dirlag", "on1e", "opcimp", "ocd", "on1a", "opc", "ins"])
+      if (o[k] !== undefined) c[k] = +o[k];
+    c.sample = o.sample; c.side = o.side;
+    if (!S.pass) S.carPos = restPos();
+    syncControls(); drawWave();
+  } else if (tag === "@PASS") {
+    S.pass = { dir: o.dir === "R" ? 1 : -1, from: +o.from, to: +o.to, sps: +o.sps, t0: performance.now() };
+    S.cfg.l = +o.l; S.cfg.r = +o.r; S.cfg.l2 = +(o.l2 ?? -1); S.cfg.r2 = +(o.r2 ?? -1); S.cfg.on1 = +o.on1; S.cfg.on1b = +(o.on1b ?? -1);
+    setRunning();
+  } else if (tag === "@ROW") {
+    const r = { bits: o.bits || "" };
+    for (const k of ["n", "l", "r", "l1", "r1", "l2", "r2", "sel", "chg", "opcp", "on1p", "k2c", "ign", "setup", "lat", "sv", "hv"]) r[k] = +(o[k] ?? 0);
+    r.ref1 = o.ref1 || "-"; r.ref2 = o.ref2 || "-";
+    r.dir = o.dir;
+    if (o.l1 === undefined) { r.l1 = r.l; r.r1 = r.r; r.l2 = -1; r.r2 = -1; }
+    const i = S.rows.findIndex((x) => x.n === r.n);
+    if (i >= 0) S.rows[i] = r; else S.rows.push(r);
+    S.rows.sort((a, b) => a.n - b.n);
+    if (S.rows.length > 1000) S.rows.shift();
+    if (S.pass) { S.carPos = S.pass.to; S.pass = null; }
+    setRunning(); drawFabric(); showStats(r);
+  } else if (tag === "@WAVE") {
+    S.waves.push({ n: +o.n, dir: o.dir, from: +o.from, k: +o.k, d: o.d || "" });
+    if (S.waves.length > 8) S.waves.shift();
+    drawWave();
+  } else if (tag === "@IDLE") {
+    S.cfg.side = o.side; S.pass = null; S.carPos = restPos(); S.auto = false; setRunning();
+  } else if (tag === "@ABORT") {
+    S.pass = null; S.carPos = restPos(); setRunning();
+  } else if (tag === "@CLEAR") {
+    S.rows = []; S.waves = []; drawFabric(); drawWave(); $("stats").textContent = "まだ段がありません";
+  }
+  $("sideLbl").textContent = S.cfg.side === "R" ? "右端" : "左端";
+}
+function spanL() { const c = S.cfg; return c.l2 >= 0 ? Math.min(c.l, c.l2) : c.l; }
+function spanR() { const c = S.cfg; return c.l2 >= 0 ? Math.max(c.r, c.r2) : c.r; }
+const restPos = () => { const o = Math.abs(S.cfg.offset); return S.cfg.side === "R" ? spanR() + S.cfg.margin + o : spanL() - S.cfg.margin - o; };
+
+// ---------------------------------------------------------------- 送信
+function send(cmd) {
+  if (!S.link) { log("（未接続）" + cmd, "tx"); return; }
+  log("> " + cmd, "tx");
+  S.link.write(cmd + "\n");
+}
+
+// Web Serial
+async function connectSerial() {
+  if (!("serial" in navigator)) { alert("このブラウザは Web Serial に対応していません。Chrome か Edge で開いてください。"); return; }
+  try {
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    const enc = new TextEncoder();
+    const writer = port.writable.getWriter();
+    S.link = { write: (s) => writer.write(enc.encode(s)), kind: "serial" };
+    setStatus(true, "接続中 (USB シリアル)");
+    const reader = port.readable.pipeThrough(new TextDecoderStream()).getReader();
+    let buf = "";
+    send("cfg");
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      let k;
+      while ((k = buf.indexOf("\n")) >= 0) { onLine(buf.slice(0, k)); buf = buf.slice(k + 1); }
+    }
+  } catch (e) {
+    log("接続エラー: " + e.message);
+  }
+  S.link = null;
+  setStatus(false, "切断");
+}
+
+function setStatus(on, text) {
+  $("dot").classList.toggle("on", on);
+  $("status").textContent = text;
+  $("btnConnect").disabled = on;
+  $("btnDemo").disabled = on;
+  setRunning();
+}
+// 走行中は走行ボタンを止める (本機は走行中のコマンドを受け付けない)
+function setRunning() {
+  const busy = !!S.pass || S.auto;
+  document.querySelectorAll("button.run").forEach((b) => { b.disabled = busy || !S.link; });
+  $("btnAuto").textContent = S.auto ? "自動往復を止める" : "自動往復";
+  $("btnAuto").disabled = !S.link;
+}
+
+// ---------------------------------------------------------------- デモ (本機の模擬)
+// 本機と同じ手順で 1 パスの信号を作り、模擬コントローラ (モチーフの繰り返し) の INS を記録する
+class DemoSim {
+  constructor(onLine) {
+    this.out = onLine;
+    this.c = { sps: 150, l: 90, r: 149, l2: -1, r2: -1, on1: 120, on1b: -1, margin: 12, offset: 0, dirlag: 0, sample: "fall",
+               on1e: 1, opcimp: 1, ocd: 0, on1a: 0, opc: 1, ins: 0, pause: 400, side: "R" };
+    this.n = 0; this.timer = null; this.autoLeft = 0; this.autoInf = false; this.running = false; this.impPending = true;
+    this.motif = ["000010000","000111000","001101100","011000110","110010011","011000110","001101100","000111000"];
+  }
+  emitCfg() {
+    const c = this.c;
+    this.out(`@CFG ver=demo sps=${c.sps} l=${c.l} r=${c.r} l2=${c.l2} r2=${c.r2} on1=${c.on1} on1b=${c.on1b} margin=${c.margin} offset=${c.offset} sample=${c.sample} duty=50 pause=${c.pause} lead=2000 on1e=${c.on1e} opcimp=${c.opcimp} dirlag=${c.dirlag} ocd=${c.ocd} on1a=${c.on1a} opc=${c.opc} ins=${c.ins} ws=50 wh=10 mat=-1 side=${c.side}`);
+  }
+  pass(dir) {
+    const c = this.c, win = (p) => (p >= c.l && p <= c.r) || (c.l2 >= 0 && p >= c.l2 && p <= c.r2);
+    const L = c.l2 >= 0 ? Math.min(c.l, c.l2) : c.l, R = c.l2 >= 0 ? Math.max(c.r, c.r2) : c.r, o = Math.abs(c.offset);
+    const from = dir > 0 ? L - c.margin - o : R + c.margin + o, to = dir > 0 ? R + c.margin + o : L - c.margin - o;
+    const imp = c.opcimp && this.impPending; this.impPending = false;
+    const n = ++this.n;
+    this.running = true;
+    this.out(`@PASS n=${n} dir=${dir > 0 ? "R" : "L"} from=${from} to=${to} sps=${c.sps} l=${c.l} r=${c.r} l2=${c.l2} r2=${c.r2} on1=${c.on1} on1b=${c.on1b} imp=${imp ? 1 : 0}`);
+    // 信号を 1 目ずつ作る
+    const M = this.motif, h = M.length, w = M[0].length, oldOcd = this.ocdLevel ?? (c.ocd ? 1 : 0);
+    const newOcd = dir > 0 ? c.ocd : 1 - c.ocd;
+    let d = "", sel = 0, chg = 0, opcp = 0, on1p = 0, opcFirst = -1, cur = -1, prevK = 0, prevN = 0, prevD = 1;
+    const curs = [], winOf = (p) => (p >= c.l && p <= c.r ? 1 : c.l2 >= 0 && p >= c.l2 && p <= c.r2 ? 2 : 0);
+    const bits = {};
+    const steps = Math.abs(to - from) + 1;
+    for (let k = 0; k < steps; k++) {
+      const pos = from + dir * k, edge = k === c.dirlag, sp = pos + dir * c.offset;
+      const ocd = k >= c.dirlag ? newOcd : oldOcd;
+      const isCur = pos === c.on1 || (c.on1b >= 0 && pos === c.on1b);
+      const kOn = win(sp) || (edge && imp), nOn = isCur || (edge && c.on1e);
+      if (isCur) curs.push({ s: sp, w: winOf(sp) });
+      if (kOn && !prevK) opcp++; if (nOn && !prevN) on1p++; prevK = kOn; prevN = nOn;
+      if (win(sp) && opcFirst < 0) opcFirst = k;
+      if (isCur && cur < 0) cur = k;
+      let insH = 1;
+      if (win(sp)) {
+        const b = M[(h - 1) - ((n - 1) % h)][((sp - c.l) % w + w) % w] === "1";
+        bits[sp] = b; if (b) sel++;
+        insH = b ? c.ins : 1 - c.ins;
+      }
+      if (insH !== prevD) chg++; prevD = insH;
+      const kH = kOn ? c.opc : 1 - c.opc, nH = nOn ? c.on1a : 1 - c.on1a;
+      d += "0123456789ABCDEF"[(kH ? 1 : 0) | (nH ? 2 : 0) | (insH ? 4 : 0) | (ocd ? 8 : 0)];
+    }
+    this.ocdLevel = newOcd;
+    let bs = "";
+    for (let i = L; i <= R; i++) bs += !win(i) ? "-" : bits[i] ? "1" : "0";
+    const k2c = opcFirst >= 0 && cur >= 0 ? cur - opcFirst : 9999;
+    // 基準目: 区間内で最初のカーソル、なければ区間の中央。区間外は無視
+    let used = 0;
+    const refs = [[c.l, c.r], [c.l2, c.r2]].map(([a, b], w) => {
+      if (a < 0) return "-";
+      const hit = curs.find((x) => x.w === w + 1);
+      if (hit) { used++; return "c" + hit.s; }
+      return "m" + (a + b) / 2;
+    });
+    const ms = steps * 1000 / c.sps + 2;
+    this.timer = setTimeout(() => {
+      this.out(`#${String(n).padStart(4, "0")} ${dir > 0 ? "->R" : "L<-"}  ${needleName(L)}..${needleName(R)}  選針 ${sel}  OPC ${opcp}回 ON1 ${on1p}回`);
+      this.out(`@ROW n=${n} dir=${dir > 0 ? "R" : "L"} l=${L} r=${R} l1=${c.l} r1=${c.r} l2=${c.l2} r2=${c.r2} sel=${sel} chg=${chg} opcp=${opcp} on1p=${on1p} k2c=${k2c} ref1=${refs[0]} ref2=${refs[1]} ign=${curs.length - used} setup=3300 lat=18 sv=0 hv=0 bits=${bs}`);
+      this.out(`@WAVE n=${n} dir=${dir > 0 ? "R" : "L"} from=${from} k=${steps} d=${d}`);
+      c.side = dir > 0 ? "R" : "L";
+      this.running = false;
+      const more = this.autoInf || (this.autoLeft > 1 && this.autoLeft--);
+      if (more) this.timer = setTimeout(() => this.pass(c.side === "R" ? -1 : 1), c.pause);
+      else { this.autoInf = false; this.autoLeft = 0; this.out(`@IDLE side=${c.side}`); }
+    }, ms);
+  }
+  write(s) {
+    const a = s.trim().split(/\s+/), c = this.c, k = (a[0] || "").toLowerCase();
+    if (k === "s") { clearTimeout(this.timer); if (this.running) { this.out(`@ABORT n=${this.n}`); this.n--; } this.running = false; this.autoInf = false; this.out(`@IDLE side=${c.side}`); return; }
+    if (this.running) { this.out("走行中です (s で停止)"); return; }
+    const nd = (x) => parseNeedle(x), num = (x, lo, hi, dv) => { const v = parseInt(x, 10); return isNaN(v) ? dv : Math.max(lo, Math.min(hi, v)); };
+    switch (k) {
+      case "p": this.pass(c.side === "R" ? -1 : 1); break;
+      case "r": this.pass(1); break;
+      case "l": this.pass(-1); break;
+      case "a": this.autoInf = !a[1] || +a[1] === 0; this.autoLeft = +a[1] || 0; this.pass(c.side === "R" ? -1 : 1); break;
+      case "init": this.n = 0; this.impPending = true; this.out("@CLEAR"); break;
+      case "speed": c.sps = num(a[1], 1, 2000, 150); this.emitCfg(); break;
+      case "cam": case "cam2": {
+        if (k === "cam2" && a[1] === "off") { c.l2 = -1; c.r2 = -1; this.emitCfg(); break; }
+        const p = (k === "cam2" ? [c.l, c.r] : []).concat(a.slice(1).map(nd));
+        if ((p.length === 2 || p.length === 4) && !p.includes(null)) {
+          p.sort((x, y) => x - y);
+          if (new Set(p).size === p.length) { [c.l, c.r] = p; [c.l2, c.r2] = p.length === 4 ? [p[2], p[3]] : [-1, -1]; }
+        }
+        this.emitCfg(); break;
+      }
+      case "on1": case "nd1": { const v = nd(a[1]), v2 = a[2] && a[2] !== "off" ? nd(a[2]) : -1; if (v !== null && v2 !== null) { c.on1 = v; c.on1b = v2; } this.emitCfg(); break; }
+      case "margin": c.margin = num(a[1], 1, 60, c.margin); this.emitCfg(); break;
+      case "offset": c.offset = num(a[1], -60, 60, 0); this.emitCfg(); break;
+      case "dirlag": c.dirlag = num(a[1], 0, 20, 0); this.emitCfg(); break;
+      case "on1edge": case "nd1edge": c.on1e = +a[1] ? 1 : 0; this.emitCfg(); break;
+      case "opcimp": case "kslimp": c.opcimp = +a[1] ? 1 : 0; this.emitCfg(); break;
+      case "sample": c.sample = a[1] === "rise" ? "rise" : "fall"; this.emitCfg(); break;
+      case "pol": { const key = { ocd: "ocd", on1: "on1a", opc: "opc", ins: "ins", hok: "ocd", nd1: "on1a", ksl: "opc", dob: "ins" }[(a[1] || "").toLowerCase()]; if (key) c[key] = +a[2] ? 1 : 0; this.emitCfg(); break; }
+      case "clear": this.n = 0; this.out("@CLEAR"); break;
+      case "cfg": case "default": case "save": case "load": this.emitCfg(); break;
+      case "hist": break;
+      default: this.out("? でコマンド一覧 (デモ)");
+    }
+  }
+}
+function startDemo() {
+  const sim = new DemoSim((l) => onLine(l));
+  S.link = { write: (s) => sim.write(s.trim()), kind: "demo" };
+  setStatus(true, "デモ（模擬キャリッジ）");
+  $("btnDemo").disabled = true; $("btnConnect").disabled = true;
+  send("cfg");
+}
+
+// ---------------------------------------------------------------- 配置 (ポイントカム 1〜4・カーソル 1・2)
+const camList = () => { const c = S.cfg; return [c.l, c.r].concat(c.l2 >= 0 ? [c.l2, c.r2] : []); };
+const curList = () => { const c = S.cfg; return [c.on1].concat(c.on1b >= 0 ? [c.on1b] : []); };
+const drag = { kind: null, idx: -1, pos: 0, moved: false };   // kind: "pc" | "cur"
+
+// 入力欄 → {cams, curs}。不正なら null (理由をログに出す)
+function readPlacement() {
+  const v = (id) => $(id).value.trim();
+  const pc = ["pc1", "pc2"].map((id) => parseNeedle(v(id)));
+  const p3 = v("pc3"), p4 = v("pc4");
+  if (pc.includes(null)) { log("ポイントカム 1・2 の針番号が不正です (例 L30 / R30)"); return null; }
+  if (!!p3 !== !!p4) { log("ポイントカム 3・4 は両方入れるか、両方空欄にしてください"); return null; }
+  if (p3) {
+    const q = [parseNeedle(p3), parseNeedle(p4)];
+    if (q.includes(null)) { log("ポイントカム 3・4 の針番号が不正です"); return null; }
+    pc.push(...q);
+  }
+  if (new Set(pc).size !== pc.length) { log("ポイントカムを同じ針に 2 つは置けません"); return null; }
+  const c1 = parseNeedle(v("cur1")), c2 = v("cur2") ? parseNeedle(v("cur2")) : -1;
+  if (c1 === null || c2 === null) { log("カーソルの針番号が不正です"); return null; }
+  return { cams: pc, curs: c2 >= 0 ? [c1, c2] : [c1] };
+}
+// {cams, curs} → 入力欄
+function writePlacement(cams, curs) {
+  ["pc1", "pc2", "pc3", "pc4"].forEach((id, i) => { $(id).value = cams[i] !== undefined ? needleName(cams[i]) : ""; });
+  $("cur1").value = needleName(curs[0]); $("cur2").value = curs[1] !== undefined ? needleName(curs[1]) : "";
+  updatePlacementButtons();
+}
+function updatePlacementButtons() {
+  $("btnPc34").textContent = $("pc3").value.trim() || $("pc4").value.trim() ? "3・4 を外す" : "3・4 を追加";
+  $("btnCur2").textContent = $("cur2").value.trim() ? "2 を外す" : "2 を追加";
+}
+// 配置を反映する。表示 (S.cfg) は本機と同じく並べ替えてすぐ更新し、接続中は本機へ送る (@CFG の返答で確定)
+function applyPlacement(pl) {
+  if (!pl) return false;
+  if (S.link && (S.pass || S.auto)) { log("走行中は位置を変えられません。止めてから適用してください"); return false; }
+  const p = pl.cams.slice().sort((a, b) => a - b), c = S.cfg;
+  [c.l, c.r] = p; [c.l2, c.r2] = p.length === 4 ? [p[2], p[3]] : [-1, -1];
+  c.on1 = pl.curs[0]; c.on1b = pl.curs.length > 1 ? pl.curs[1] : -1;
+  if (!S.pass) S.carPos = restPos();
+  const cam = "cam " + pl.cams.map(needleName).join(" "), on1 = "on1 " + pl.curs.map(needleName).join(" ");
+  if (S.link) { send(cam); send(on1); }
+  else log(`（未接続）表示だけ更新: ${cam} / ${on1}`, "tx");
+  return true;
+}
+// 空いている針を探す (from から step ずつ)
+function freeNeedle(from, step, taken) {
+  for (let i = from; i >= 0 && i < NEEDLES; i += step) if (!taken.includes(i)) return i;
+  for (let i = from; i >= 0 && i < NEEDLES; i -= step) if (!taken.includes(i)) return i;
+  return -1;
+}
+
+// ---------------------------------------------------------------- 描画: ベッド
+const bed = $("bed");
+const BED_MIN = -16, BED_MAX = NEEDLES + 15;
+const bedX = (i) => (i - BED_MIN + 0.5) * (bed.clientWidth / (BED_MAX - BED_MIN + 1));
+const bedNeedle = (x) => Math.max(0, Math.min(NEEDLES - 1, Math.round(x / (bed.clientWidth / (BED_MAX - BED_MIN + 1)) - 0.5 + BED_MIN)));
+function drawBed() {
+  const dpr = window.devicePixelRatio || 1, W = bed.clientWidth, H = bed.clientHeight;
+  if (bed.width !== Math.round(W * dpr)) { bed.width = Math.round(W * dpr); bed.height = Math.round(H * dpr); }
+  const g = bed.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const span = BED_MAX - BED_MIN + 1, sx = W / span, X = (i) => (i - BED_MIN + 0.5) * sx;
+  const c = S.cfg, railY = 44;
+  const cams = camList(), curs = curList();
+  if (drag.kind === "pc") cams[drag.idx] = drag.pos;
+  if (drag.kind === "cur") curs[drag.idx] = drag.pos;
+  const ps = cams.slice().sort((a, b) => a - b);
+  const wins = [[ps[0], ps[1]]]; if (ps.length === 4) wins.push([ps[2], ps[3]]);
+  g.fillStyle = css("--cam");
+  for (const [a, b] of wins) g.fillRect(X(a) - sx / 2, 8, (b - a + 1) * sx, 50);
+  g.strokeStyle = css("--muted"); g.lineWidth = 1;
+  for (let i = 0; i < NEEDLES; i++) {
+    const x = X(i), big = isTen(i) || i === HALF - 1 || i === HALF;
+    g.globalAlpha = big ? 0.9 : 0.35; g.beginPath(); g.moveTo(x, railY); g.lineTo(x, railY - (big ? 12 : 7)); g.stroke();
+  }
+  g.globalAlpha = 1;
+  g.strokeStyle = css("--line"); g.beginPath(); g.moveTo(X(0) - sx / 2, railY + 0.5); g.lineTo(X(NEEDLES - 1) + sx / 2, railY + 0.5); g.stroke();
+  g.fillStyle = css("--muted"); g.font = "11px system-ui, sans-serif"; g.textAlign = "center";
+  for (const i of [0, HALF - 60, HALF - 1, HALF, HALF + 59, NEEDLES - 1])
+    g.fillText(needleName(i), X(i) + (i === HALF - 1 ? -8 : i === HALF ? 8 : 0), 94);
+  // ポイントカム (針番号順に 1〜4)
+  ps.forEach((i, k) => {
+    const x = X(i), on = drag.kind === "pc" && i === drag.pos;
+    g.fillStyle = css("--accent"); g.globalAlpha = on ? 1 : 0.9;
+    g.beginPath(); g.moveTo(x, 58); g.lineTo(x - 6, 68); g.lineTo(x + 6, 68); g.closePath(); g.fill();
+    g.globalAlpha = 1; g.font = "10px system-ui, sans-serif"; g.textAlign = "center"; g.fillText(String(k + 1), x, 80);
+  });
+  // カーソル
+  g.font = "11px system-ui, sans-serif";
+  curs.forEach((n, i) => {
+    g.strokeStyle = css("--on1"); g.lineWidth = drag.kind === "cur" && drag.idx === i ? 3 : 2;
+    g.beginPath(); g.moveTo(X(n), 20); g.lineTo(X(n), railY); g.stroke();
+    g.fillStyle = css("--on1"); g.textAlign = "left"; g.fillText(curs.length < 2 ? "カーソル" : W < 600 ? String(i + 1) : `カーソル${i + 1}`, X(n) + 4, 18);
+  });
+  if (drag.kind) {                                          // ドラッグ中の針番号
+    const x = X(drag.pos), t = needleName(drag.pos);
+    g.font = "bold 11px system-ui, sans-serif"; g.textAlign = "center";
+    const w = g.measureText(t).width + 10, bx = Math.min(Math.max(x - w / 2, 2), W - w - 2);
+    g.fillStyle = css("--ink"); roundRect(g, bx, 0, w, 15, 4); g.fill();
+    g.fillStyle = css("--panel"); g.fillText(t, bx + w / 2, 11);
+  }
+  let p = S.carPos, d = 0;
+  if (S.pass) {
+    const P = S.pass, dt = (performance.now() - P.t0 - 2) / 1000, steps = Math.max(0, Math.floor(dt * P.sps));
+    p = P.from + P.dir * Math.min(steps, Math.abs(P.to - P.from)); d = P.dir;
+  }
+  if (p !== null && p !== undefined) {
+    const x = X(p), w = Math.max(40, 22 * sx);
+    g.fillStyle = css("--carriage"); g.globalAlpha = 0.25; roundRect(g, x - w / 2, 24, w, 16, 5); g.fill();
+    g.globalAlpha = 1; g.beginPath(); g.arc(x, 32, 4, 0, Math.PI * 2); g.fill();
+    if (d && c.offset) {                                  // 選針位置
+      g.fillStyle = css("--carriage");
+      const xs = X(p + d * c.offset);
+      g.beginPath(); g.moveTo(xs, 40); g.lineTo(xs - 4, 48); g.lineTo(xs + 4, 48); g.closePath(); g.fill();
+    }
+    if (d) { g.textAlign = "center"; g.fillStyle = css("--ink"); g.fillText(d > 0 ? "→" : "←", x, 20); }
+  }
+}
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+
+// ---------------------------------------------------------------- 描画: 波形
+// @WAVE の 1 文字 = 1 クロック: b0 OPC / b1 ON1 / b2 INS / b3 OCD (ピンが H なら 1)。ONP はクロックごとに H→L。
+const waveC = $("wave");
+const CH = [
+  { name: "INS", pin: "DIN3", ec1: "EC1_OUT", bit: 2, color: "#2e9d57" },
+  { name: "OPC", pin: "DIN5", ec1: "PointCam", bit: 0, color: "#e98fa6" },
+  { name: "ON1", pin: "DIN1", ec1: "DataRequest", bit: 1, color: "#c0392b" },
+  { name: "OCD", pin: "DIN2", ec1: "SwingDir", bit: 3, color: "#8e44ad" },
+  { name: "ONP", pin: "DIN4", ec1: "CountPitch", bit: -1, color: "#2e9d57" },
+];
+function drawWave() {
+  const dpr = window.devicePixelRatio || 1, W = waveC.clientWidth || 600;
+  const rowH = 30, top = 18, H = top + CH.length * rowH + 6;
+  waveC.style.height = H + "px";
+  waveC.width = Math.round(W * dpr); waveC.height = Math.round(H * dpr);
+  const g = waveC.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const labW = W < 520 ? 80 : 150;
+  g.font = "11px system-ui, sans-serif"; g.textBaseline = "middle";
+  CH.forEach((ch, i) => {
+    const y = top + i * rowH + rowH / 2;
+    g.fillStyle = ch.color; g.fillRect(4, y - 7, 4, 14);
+    g.fillStyle = css("--ink"); g.textAlign = "left";
+    g.fillText(labW > 100 ? `${ch.name} ${ch.pin} · ${ch.ec1}` : `${ch.name} ${ch.pin}`, 12, y);
+  });
+  const ws = S.waves.slice(-(+$("waveN").value || 2));
+  if (!ws.length) { $("waveInfo").textContent = "パスを走らせると表示されます"; return; }
+  // 並べるクロック列: 先頭と各パスの間に待機を入れる
+  const on1Idle = S.cfg.on1a ? 0 : 1, opcIdle = S.cfg.opc ? 0 : 1;
+  const gap = Math.max(6, Math.round(ws.reduce((a, w) => a + w.k, 0) * 0.06));
+  const slots = [];                                 // {v: 4bit, clk: bool}
+  let prevOcd = null, prevIns = 1;
+  const val = (c) => { const x = c <= "9" ? c.charCodeAt(0) - 48 : c.charCodeAt(0) - 55; return x; };
+  ws.forEach((w, wi) => {
+    const v0 = val(w.d[0] || "0"), ocd0 = (v0 >> 3) & 1;
+    let switched = false; for (let i = 1; i < w.d.length; i++) if (((val(w.d[i]) >> 3) & 1) !== ocd0) { switched = true; break; }
+    const ocdBefore = prevOcd !== null ? prevOcd : (switched ? ocd0 : 1 - ocd0);
+    for (let i = 0; i < gap; i++) slots.push({ v: opcIdle | (on1Idle << 1) | (prevIns << 2) | (ocdBefore << 3), clk: false, start: i === gap - 1 ? w : null });
+    for (let i = 0; i < w.k; i++) { const v = val(w.d[i] || "0"); slots.push({ v, clk: true }); prevOcd = (v >> 3) & 1; prevIns = (v >> 2) & 1; }
+  });
+  for (let i = 0; i < gap; i++) slots.push({ v: opcIdle | (on1Idle << 1) | (prevIns << 2) | ((prevOcd ?? 0) << 3), clk: false });
+  const x0 = labW, sw = (W - labW - 6) / slots.length, amp = 16;
+  g.strokeStyle = css("--line"); g.lineWidth = 1;
+  CH.forEach((ch, i) => { const y = top + i * rowH + rowH - 3; g.beginPath(); g.moveTo(x0, y + 0.5); g.lineTo(W - 4, y + 0.5); g.stroke(); });
+  g.lineWidth = 1.2; g.strokeStyle = css("--ink");
+  CH.forEach((ch, i) => {
+    const base = top + i * rowH + rowH - 5, yv = (lv) => base - (lv ? amp : 0);
+    g.beginPath();
+    let last = null;
+    slots.forEach((s, k) => {
+      const xa = x0 + k * sw, xb = xa + sw;
+      const segs = ch.bit < 0 ? (s.clk ? [[xa, 1], [xa + sw / 2, 0]] : [[xa, 0]]) : [[xa, (s.v >> ch.bit) & 1]];
+      for (const [x, lv] of segs) {
+        if (last === null) g.moveTo(x, yv(lv));
+        else if (lv !== last) { g.lineTo(x, yv(last)); g.lineTo(x, yv(lv)); }
+        last = lv;
+      }
+      if (k === slots.length - 1) g.lineTo(xb, yv(last));
+    });
+    g.stroke();
+  });
+  // パスの見出し
+  g.fillStyle = css("--muted"); g.textAlign = "left"; g.textBaseline = "alphabetic";
+  slots.forEach((s, k) => { if (s.start) g.fillText(`#${s.start.n} ${s.start.dir === "R" ? "→右" : "←左"} ${s.start.k}目`, x0 + (k + 1) * sw + 2, 12); });
+  const last = S.rows[S.rows.length - 1];
+  $("waveInfo").textContent = last && last.k2c !== 9999 ? `直近 #${last.n}: OPC↑→カーソル ${last.k2c > 0 ? "+" : ""}${last.k2c} 目` : "";
+}
+
+// ---------------------------------------------------------------- 描画: 編み地
+const fab = $("fabric");
+function drawFabric() {
+  $("rowCount").textContent = S.rows.length;
+  const wrap = $("fabricWrap"), dpr = window.devicePixelRatio || 1;
+  const rows = S.rows.slice().reverse();                     // 上 = 最新
+  if (!rows.length) { fab.width = 1; fab.height = 1; fab.style.width = "1px"; fab.style.height = "1px"; return; }
+  let lo = 999, hi = -1;
+  for (const r of rows) { lo = Math.min(lo, r.l); hi = Math.max(hi, r.r); }
+  const gut = 64, gutR = 16, avail = wrap.clientWidth - gut - gutR - 2, cols = hi - lo + 1;
+  const cell = Math.max(3, Math.min(12, Math.floor(avail / cols)));
+  const W = gut + cols * cell + gutR, H = 18 + rows.length * cell;
+  fab.width = Math.round(W * dpr); fab.height = Math.round(H * dpr); fab.style.width = W + "px"; fab.style.height = H + "px";
+  const g = fab.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = css("--muted"); g.font = "10px system-ui, sans-serif"; g.textAlign = "center";
+  for (let i = lo; i <= hi; i++) {
+    if (i === lo || i === hi || isTen(i)) g.fillText(needleName(i), gut + (i - lo + 0.5) * cell, 11);
+  }
+  const selC = css("--sel"), unC = css("--unsel"), warnC = css("--warn");
+  rows.forEach((r, k) => {
+    const y = 16 + k * cell;
+    g.fillStyle = css("--muted"); g.textAlign = "right"; g.font = `${Math.min(11, cell + 1)}px system-ui, sans-serif`;
+    if (cell >= 7 || k % Math.ceil(8 / cell) === 0) g.fillText(`${r.n} ${r.dir === "R" ? "→" : "←"}`, gut - 6, y + cell - 1);
+    for (let i = r.l; i <= r.r; i++) {
+      const b = r.bits[i - r.l];
+      if (b === "-") continue;                               // OPC 区間外
+      g.fillStyle = b === "1" ? selC : unC;
+      g.fillRect(gut + (i - lo) * cell, y, cell - (cell > 4 ? 1 : 0), cell - (cell > 4 ? 1 : 0));
+    }
+    for (const code of [r.ref1, r.ref2]) {                   // 基準目
+      const q = refOf(code);
+      if (!q) continue;
+      g.fillStyle = q.src === "c" ? css("--on1") : css("--carriage");
+      g.fillRect(gut + (q.v - lo + 0.5) * cell - 1, y, 2, cell - (cell > 4 ? 1 : 0));
+    }
+    if (r.sv || r.hv) { g.fillStyle = warnC; g.fillRect(gut + cols * cell + 5, y, 6, cell - 1); }
+  });
+}
+function showStats(r) {
+  const bad = r.sv || r.hv;
+  $("stats").innerHTML =
+    `<span>段 <b>${r.n}</b> ${r.dir === "R" ? "→右" : "←左"}</span>` +
+    `<span>範囲 <b>${needleName(r.l)}〜${needleName(r.r)}</b></span>` +
+    `<span>選針 <b>${r.sel}</b></span><span>INS変化 <b>${r.chg}</b></span>` +
+    `<span>OPC <b>${r.opcp}</b>回 / ON1 <b>${r.on1p}</b>回</span>` +
+    `<span>OPC↑→カーソル <b>${r.k2c === 9999 ? "—" : (r.k2c > 0 ? "+" : "") + r.k2c}</b>目</span>` +
+    `<span>基準目 区間1 <b>${refText(r.ref1)}</b>${r.ref2 !== "-" ? ` / 区間2 <b>${refText(r.ref2)}</b>` : ""}</span>` +
+    `<span>無視したカーソル <b>${r.ign || 0}</b></span>` +
+    `<span>setup ≥ <b>${r.setup}</b>µs</span><span>応答 ≤ <b>${r.lat}</b>µs</span>` +
+    `<span class="${bad ? "bad" : ""}">違反 setup <b>${r.sv}</b> / hold <b>${r.hv}</b></span>`;
+}
+
+// ---------------------------------------------------------------- 操作
+function syncControls() {
+  const c = S.cfg;
+  $("speed").value = c.sps; $("speedN").value = c.sps;
+  writePlacement(camList(), curList());
+  $("margin").value = c.margin; $("offset").value = c.offset; $("dirlag").value = c.dirlag; $("sample").value = c.sample;
+  $("on1edge").checked = !!c.on1e; $("opcimp").checked = !!c.opcimp;
+  $("pol-ocd").value = c.ocd; $("pol-on1").value = c.on1a; $("pol-opc").value = c.opc; $("pol-ins").value = c.ins;
+}
+document.querySelectorAll("button[data-cmd]").forEach((b) => b.addEventListener("click", () => send(b.dataset.cmd)));
+$("btnAuto").addEventListener("click", () => { if (S.auto) { S.auto = false; send("s"); } else { S.auto = true; send("a"); } setRunning(); });
+$("btnConnect").addEventListener("click", connectSerial);
+$("btnDemo").addEventListener("click", startDemo);
+$("speed").addEventListener("input", () => { $("speedN").value = $("speed").value; });
+$("speed").addEventListener("change", () => send("speed " + $("speed").value));
+$("speedN").addEventListener("change", () => { $("speed").value = $("speedN").value; send("speed " + $("speedN").value); });
+$("sample").addEventListener("change", () => send("sample " + $("sample").value));
+$("on1edge").addEventListener("change", (e) => send("on1edge " + (e.target.checked ? 1 : 0)));
+$("opcimp").addEventListener("change", (e) => send("opcimp " + (e.target.checked ? 1 : 0)));
+$("waveN").addEventListener("change", drawWave);
+for (const k of ["ocd", "on1", "opc", "ins"]) $("pol-" + k).addEventListener("change", (e) => send(`pol ${k} ${e.target.value}`));
+$("btnPos").addEventListener("click", () => {
+  // ポイントカムもカーソルも順不問 (本機が並べ替える)。同じ針に 2 つは置けない
+  if (!applyPlacement(readPlacement())) return;
+  if (!S.link) return;
+  send(`margin ${$("margin").value}`);
+  send(`offset ${$("offset").value}`);
+  send(`dirlag ${$("dirlag").value}`);
+});
+// 3・4 / カーソル 2 の追加・外す (追加は右側の空いた針に置き、すぐ反映する)
+$("btnPc34").addEventListener("click", () => {
+  const pl = readPlacement(); if (!pl) return;
+  if (pl.cams.length === 4) pl.cams = pl.cams.slice(0, 2);
+  else {
+    const r = Math.max(...pl.cams), a = freeNeedle(Math.min(r + 10, NEEDLES - 2), 1, pl.cams);
+    const b = freeNeedle(Math.min(a + 20, NEEDLES - 1), 1, pl.cams.concat([a]));
+    if (a < 0 || b < 0) { log("ポイントカム 3・4 を置く空きがありません"); return; }
+    pl.cams.push(a, b);
+  }
+  writePlacement(pl.cams, pl.curs); applyPlacement(pl);
+});
+$("btnCur2").addEventListener("click", () => {
+  const pl = readPlacement(); if (!pl) return;
+  if (pl.curs.length === 2) pl.curs = pl.curs.slice(0, 1);
+  else {
+    const p = pl.cams.slice().sort((a, b) => a - b);
+    const want = p.length === 4 ? Math.round((p[2] + p[3]) / 2) : Math.min(p[1] + 10, NEEDLES - 1);
+    pl.curs.push(want === pl.curs[0] ? Math.min(want + 1, NEEDLES - 1) : want);
+  }
+  writePlacement(pl.cams, pl.curs); applyPlacement(pl);
+});
+for (const id of ["pc3", "pc4", "cur2"]) $(id).addEventListener("input", updatePlacementButtons);
+
+// ベッド上のドラッグ: ▲ ポイントカム (下の段) / 赤線 カーソル (上の段)
+function hitBed(ev) {
+  const r = bed.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  const near = (list) => { let best = -1, bd = ev.pointerType === "touch" ? 16 : 9; list.forEach((n, i) => { const d = Math.abs(bedX(n) - x); if (d < bd) { bd = d; best = i; } }); return best; };
+  if (y >= 50) { const i = near(camList()); if (i >= 0) return { kind: "pc", idx: i }; }
+  if (y <= 50) { const i = near(curList()); if (i >= 0) return { kind: "cur", idx: i }; }
+  return null;
+}
+const bedBusy = () => !!S.pass || S.auto;
+bed.addEventListener("pointermove", (ev) => {
+  if (drag.kind) {
+    const r = bed.getBoundingClientRect(), n = bedNeedle(ev.clientX - r.left);
+    if (n !== drag.pos) { drag.pos = n; drag.moved = true; }
+    return;
+  }
+  bed.classList.toggle("grab", !bedBusy() && !!hitBed(ev));
+});
+bed.addEventListener("pointerdown", (ev) => {
+  if (bedBusy()) return;
+  const h = hitBed(ev); if (!h) return;
+  drag.kind = h.kind; drag.idx = h.idx; drag.moved = false;
+  drag.pos = (h.kind === "pc" ? camList() : curList())[h.idx];
+  bed.setPointerCapture(ev.pointerId); bed.classList.add("grabbing");
+  ev.preventDefault();
+});
+function endDrag(commit) {
+  if (!drag.kind) return;
+  const cams = camList(), curs = curList();
+  if (drag.kind === "pc") cams[drag.idx] = drag.pos; else curs[drag.idx] = drag.pos;
+  const moved = drag.moved;
+  drag.kind = null; bed.classList.remove("grabbing");
+  if (!commit || !moved) return;
+  if (new Set(cams).size !== cams.length) { log("ポイントカムを同じ針に 2 つは置けません"); return; }
+  writePlacement(cams, curs);
+  applyPlacement({ cams, curs });
+}
+bed.addEventListener("pointerup", () => endDrag(true));
+bed.addEventListener("pointercancel", () => endDrag(false));
+
+const sendIn = () => { const v = $("cmdIn").value.trim(); if (v) { send(v); $("cmdIn").value = ""; } };
+$("btnSend").addEventListener("click", sendIn);
+$("cmdIn").addEventListener("keydown", (e) => { if (e.key === "Enter") sendIn(); });
+window.addEventListener("resize", () => { drawFabric(); drawWave(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { drawFabric(); drawWave(); });
+
+S.carPos = restPos();
+writePlacement(camList(), curList());
+setRunning();
+(function frame() { drawBed(); requestAnimationFrame(frame); })();
+drawFabric();
+drawWave();
+window.__S = S;   // テスト用
+</script>
+</body>
+</html>
