@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+
+# Node / Web アプリ
+node_modules/
+.vite/
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 出力ファイル
+output/
+*_result.txt
+
+# パターンデータ（誤って純正データを公開しないよう既定で除外）
+*.bin
+*.BIN
+*.dat
+*.DAT
+SRDS.IDX
+# samples/ に置いた自作サンプルだけは公開する
+!samples/**
+
+# 認証情報（WiFi の SSID・パスワード、アカウント名、トークンなどを公開しない）
+# M5キャリコンの SD カードに置く WiFi 設定（1行目 SSID、2行目パスワード）
+wifi.cnf
+*.cnf
+# Arduino で認証情報を分けて書くヘッダ
+secrets.h
+secrets*.h
+arduino_secrets.h
+credentials*
+# 環境変数・鍵・証明書
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
