@@ -11,7 +11,7 @@
  *
  *  対象機種: M5Stack Core2 と CoreS3 (CoreS3 Lite / CoreS3 SE を含む)。
  *  キャリッジの信号の名前 (rev.43、2026-10-17 に改めた。カッコ内は旧称。O = キャリッジから出る / I = キャリッジへ入る):
- *    OCD = キャリッジ方向 (旧 HOK)、ONP = 編み目カウント (旧 CCP)、OPC = ポイントカム有効区間 (旧 KSL)、
+ *    OCD = キャリッジ方向 (旧 HOK)、ONP = 編み針カウント (旧 CCP)、OPC = ポイントカム有効区間 (旧 KSL)、
  *    ON1 = カーソル (旧 ND1)、INS = 選針 (旧 DOB)
  *  キャリッジのコネクタ (DIN 7 ピン メス ⇔ XH 8 ピン、ケーブル色。2026-10-22 訂正: OCD と OPC が逆だった):
  *    ON1 = DIN 1 / XH 6 (赤)、OPC = DIN 2 / XH 7 (灰)、INS = DIN 3 / XH 8 (橙)、ONP = DIN 4 / XH 4 (青)、

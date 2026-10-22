@@ -10,7 +10,7 @@
       記号  本機  向き  意味
       OCD   D5    出力  キャリッジ方向 (Out Carriage Direction。旧 HOK)
                         H = 左←右 (左行き) / L = 左→右 (右行き)
-      ONP   D6    出力  編み目カウント (Out Needle Pulse。旧 CCP)  立上り (L→H) で 1 目進んだ
+      ONP   D6    出力  編み針カウント (Out Needle Pulse。旧 CCP)  立上り (L→H) で 1 目進んだ
       OPC   D8    出力  パターン出力フラグ (Out Point Cam。旧 KSL)
                         H = ポイントカム有効区間。H の間、選針にパターンを出力する
                         1 回のキャリッジ移動で H の区間は最大 2 か所
@@ -100,7 +100,7 @@
 
 // ---- ピン ---------------------------------------------------------------------
 static const uint8_t PIN_OCD      = 5;    // DIN 5 / XH 5 (黒)  キャリッジ方向
-static const uint8_t PIN_ONP      = 6;    // DIN 4 / XH 4 (青)  編み目カウント
+static const uint8_t PIN_ONP      = 6;    // DIN 4 / XH 4 (青)  編み針カウント
 static const uint8_t PIN_INS      = 7;    // DIN 3 / XH 8 (橙)  選針 (入力)
 static const uint8_t PIN_OPC      = 8;    // DIN 2 / XH 7 (灰)  ポイントカム有効区間
 static const uint8_t PIN_ON1      = 9;    // DIN 1 / XH 6 (赤)  カーソル
