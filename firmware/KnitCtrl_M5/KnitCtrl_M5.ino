@@ -13,9 +13,9 @@
  *  キャリッジの信号の名前 (rev.43、2026-10-17 に改めた。カッコ内は旧称。O = キャリッジから出る / I = キャリッジへ入る):
  *    OCD = キャリッジ方向 (旧 HOK)、ONP = 編み目カウント (旧 CCP)、OPC = ポイントカム有効区間 (旧 KSL)、
  *    ON1 = カーソル (旧 ND1)、INS = 選針 (旧 DOB)
- *  キャリッジのコネクタ (DIN 7 ピン メス ⇔ XH 8 ピン、ケーブル色。2026-10-17):
- *    ON1 = DIN 1 / XH 6 (赤)、OCD = DIN 2 / XH 7 (灰)、INS = DIN 3 / XH 8 (橙)、ONP = DIN 4 / XH 4 (青)、
- *    OPC = DIN 5 / XH 5 (黒)、16V = DIN 6 / XH 3 (黄)、Vcc 5V = DIN 7 / XH 1 (白)、GND = キー / XH 2 (緑)
+ *  キャリッジのコネクタ (DIN 7 ピン メス ⇔ XH 8 ピン、ケーブル色。2026-10-22 訂正: OCD と OPC が逆だった):
+ *    ON1 = DIN 1 / XH 6 (赤)、OPC = DIN 2 / XH 7 (灰)、INS = DIN 3 / XH 8 (橙)、ONP = DIN 4 / XH 4 (青)、
+ *    OCD = DIN 5 / XH 5 (黒)、16V = DIN 6 / XH 3 (黄)、Vcc 5V = DIN 7 / XH 1 (白)、GND = キー / XH 2 (緑)
  *  M5キャリコンの GPIO の記号 (rev.44、2026-10-17): M5 から見た向きで I / O を付け替える
  *  (I = M5 へ入る / O = M5 から出る)。キャリッジとキャリッジシミュレータは上の OCD・ONP・OPC・ON1・INS のまま。
  *    ICD = キャリッジの OCD、INP = ONP、IPC = OPC、IN1 = ON1、ONS = INS
