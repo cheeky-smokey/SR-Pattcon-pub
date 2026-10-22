@@ -117,9 +117,9 @@ Arduino UNO R4 Minima / WiFi に `firmware/SRCarriageSim/SRCarriageSim.ino` を�
 | GND | 2 | 緑 | キー | GND |
 | 16V | 3 | 黄 | 6 | 16V |
 | ONP | 4 | 青 | 4 | L→H 立ち上がりパルス |
-| OPC | 5 | 黒 | 5 | H = ポイントカム有効区間 |
+| OCD | 5 | 黒 | 5 | キャリッジ方向 H = 左←右、L = 左→右　|
 | ON1 | 6 | 赤 | 1 | カーソル（ネガティブインパルス） |
-| OCD | 7 | 灰 | 2 | キャリッジ方向 H = 左←右、L = 左→右 |
+| OPC | 7 | 灰 | 2 | H = ポイントカム有効区間 |
 | INS | 8 | オレンジ | 3 | 選針 H = 平編み、L = 編み込み |
 
 ## 配線（M5キャリコン）
