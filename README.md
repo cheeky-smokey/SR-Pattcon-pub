@@ -94,7 +94,7 @@ Arduino UNO R4 Minima / WiFi に `firmware/SRCarriageSim/SRCarriageSim.ino` を�
 | 名前 | 旧名 | 意味 |
 |---|---|---|
 | OCD | HOK | キャリッジ方向（Out Carriage Direction）。H = 左←右、L = 左→右 |
-| ONP | CCP | 編み目カウント（Out Needle Pulse）。L→H の立ち上がりで 1 目進む |
+| ONP | CCP | 編み針カウント（Out Needle Pulse）。L→H の立ち上がりで 1 目進む |
 | OPC | KSL | パターン出力フラグ（Out Point Cam）。H = ポイントカム有効区間 |
 | ON1 | ND1 | カーソル（Out Needle 1）。カーソル通過でネガティブインパルス |
 | INS | DOB | 選針（In Needle Select）。H = 平編み、L = 編み込み |
@@ -104,7 +104,7 @@ Arduino UNO R4 Minima / WiFi に `firmware/SRCarriageSim/SRCarriageSim.ino` を�
 | キャリッジ・シミュレータ | M5キャリコン | 意味 |
 |---|---|---|
 | OCD | ICD | キャリッジ方向 |
-| ONP | INP | 編み目カウント |
+| ONP | INP | 編み針カウント |
 | OPC | IPC | パターン出力フラグ（ポイントカム有効区間） |
 | ON1 | IN1 | カーソル |
 | INS | ONS | 選針 |
