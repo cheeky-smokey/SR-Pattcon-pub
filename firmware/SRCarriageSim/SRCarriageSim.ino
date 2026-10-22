@@ -10,7 +10,7 @@
       記号  本機  向き  意味
       OCD   D5    出力  キャリッジ方向 (Out Carriage Direction。旧 HOK)
                         H = 左←右 (左行き) / L = 左→右 (右行き)
-      ONP   D6    出力  編み目カウント (Out Needle Pulse。旧 CCP)  立上り (L→H) で 1 目進んだ
+      ONP   D6    出力  編み針カウント (Out Needle Pulse。旧 CCP)  立上り (L→H) で 1 目進んだ
       OPC   D8    出力  パターン出力フラグ (Out Point Cam。旧 KSL)
                         H = ポイントカム有効区間。H の間、選針にパターンを出力する
                         1 回のキャリッジ移動で H の区間は最大 2 か所
@@ -26,15 +26,15 @@
       D2 ボタン(GND へ) = 1パス / D3 ボタン(GND へ) = 自動往復 開始・停止
       D13 LED = OPC が H の間点灯 / UNO R4 WiFi は LED マトリクスに直近 8 段を表示
 
-  ■ コネクタ (XH 8 ピン ⇔ DIN 7 ピン メス、2026-10-17)
+  ■ コネクタ (XH 8 ピン ⇔ DIN 7 ピン メス、2026-10-17。2026-10-22 訂正: OCD と OPC が逆だった)
       名称     XH  ケーブル色  DIN   内容
       Vcc(5V)  1   白          7
       GND      2   緑          キー
       16V      3   黄          6     本機のピンにはつながない (UNO R4 は 5V)
       ONP      4   青          4     L→H 立ち上がりパルス
-      OPC      5   黒          5     H = ポイントカム有効区間
+      OCD      5   黒          5     キャリッジ方向  H = 左←右 / L = 左→右
       ON1      6   赤          1     カーソル (ネガティブインパルス)
-      OCD      7   灰          2     キャリッジ方向  H = 左←右 / L = 左→右
+      OPC      7   灰          2     H = ポイントカム有効区間
       INS      8   オレンジ    3     選針  H = 平編み / L = 編み込み
 
   ■ カーソルとポイントカム (実機, 2026-09)
@@ -99,10 +99,10 @@
 #define SIM_VERSION "1017"
 
 // ---- ピン ---------------------------------------------------------------------
-static const uint8_t PIN_OCD      = 5;    // DIN 2 / XH 7 (灰)  キャリッジ方向
-static const uint8_t PIN_ONP      = 6;    // DIN 4 / XH 4 (青)  編み目カウント
+static const uint8_t PIN_OCD      = 5;    // DIN 5 / XH 5 (黒)  キャリッジ方向
+static const uint8_t PIN_ONP      = 6;    // DIN 4 / XH 4 (青)  編み針カウント
 static const uint8_t PIN_INS      = 7;    // DIN 3 / XH 8 (橙)  選針 (入力)
-static const uint8_t PIN_OPC      = 8;    // DIN 5 / XH 5 (黒)  ポイントカム有効区間
+static const uint8_t PIN_OPC      = 8;    // DIN 2 / XH 7 (灰)  ポイントカム有効区間
 static const uint8_t PIN_ON1      = 9;    // DIN 1 / XH 6 (赤)  カーソル
 static const uint8_t PIN_BTN_PASS = 2;
 static const uint8_t PIN_BTN_AUTO = 3;
